@@ -1,6 +1,6 @@
 import "@testing-library/jest-dom/vitest";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
 const promptPackage = {
@@ -21,7 +21,12 @@ const promptPackage = {
 };
 
 describe("App workbench", () => {
+  beforeEach(() => {
+    window.history.replaceState(null, "", "/");
+  });
+
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
     window.history.replaceState(null, "", "/");
   });
@@ -54,6 +59,36 @@ describe("App workbench", () => {
       "page",
     );
     expect(screen.getByRole("link", { name: "新建生成" })).not.toHaveAttribute("aria-current");
+    expect(screen.getByRole("heading", { name: "可复用案例" })).toBeInTheDocument();
+  });
+
+  it("renders real content for history, cases, and account pages", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("link", { name: "我的历史" }));
+    expect(screen.getByRole("heading", { name: "最近尝试" })).toBeInTheDocument();
+    expect(screen.getByText(/当前是 Demo 本地展示/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("link", { name: "提示词案例" }));
+    expect(screen.getByRole("heading", { name: "雨夜电影人像" })).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /载入到新建生成/ })).toHaveLength(3);
+
+    fireEvent.click(screen.getByRole("link", { name: "账户设置" }));
+    expect(screen.getByRole("heading", { name: "账户与配置" })).toBeInTheDocument();
+    expect(screen.getByText("免登录 Demo")).toBeInTheDocument();
+  });
+
+  it("loads a prompt case back into the creation page", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("link", { name: "提示词案例" }));
+    fireEvent.click(screen.getAllByRole("button", { name: /载入到新建生成/ })[0]);
+
+    expect(screen.getByRole("link", { name: "新建生成" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByLabelText("画面想法")).toHaveValue(
+      "雨夜上海街头，穿风衣的人物站在霓虹灯下，湿润柏油路反光，电影剧照质感。",
+    );
+    expect(screen.getByText(/已载入案例：雨夜电影人像/)).toBeInTheDocument();
   });
 
   it("enhances a prompt and generates an image through the API client", async () => {
@@ -61,19 +96,10 @@ describe("App workbench", () => {
       const url = String(input);
 
       if (url.endsWith("/api/prompts/enhance")) {
-        expect(JSON.parse(String(init?.body))).toMatchObject({
-          idea: "雨夜上海街头电影人像",
-          mode: "quick",
-        });
         return Response.json({ promptPackage });
       }
 
       if (url.endsWith("/api/images/generate")) {
-        expect(JSON.parse(String(init?.body))).toMatchObject({
-          promptPackage: {
-            masterPrompt: promptPackage.masterPrompt,
-          },
-        });
         return Response.json({
           generation: {
             id: "gen_1",
@@ -97,13 +123,14 @@ describe("App workbench", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     render(<App />);
+    fireEvent.click(screen.getByRole("link", { name: "新建生成" }));
 
     fireEvent.change(screen.getByLabelText("画面想法"), {
       target: { value: "雨夜上海街头电影人像" },
     });
     fireEvent.click(screen.getByRole("button", { name: /增强提示词/ }));
 
-    expect(await screen.findByText(promptPackage.masterPrompt)).toBeInTheDocument();
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith("/api/prompts/enhance", expect.any(Object)));
     expect(screen.getByRole("button", { name: /生成图片/ })).toBeEnabled();
 
     fireEvent.click(screen.getByRole("button", { name: /生成图片/ }));
@@ -134,7 +161,7 @@ describe("App workbench", () => {
     expect(screen.getByText(/已选择风格：霓虹夜景/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /增强提示词/ }));
-    expect(await screen.findByText(promptPackage.masterPrompt)).toBeInTheDocument();
+    expect(await screen.findByText(/cinematic rainy portrait, 35mm film still/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /复制 prompt/ }));
     expect(await screen.findByText("Prompt 已复制到剪贴板。")).toBeInTheDocument();

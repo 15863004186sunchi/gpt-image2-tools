@@ -93,6 +93,14 @@ select {
   font: 500 15px/1.6 ui-sans-serif, system-ui, sans-serif;
 }
 
+.eyebrow {
+  margin: 0 0 8px;
+  color: #0b6b58;
+  font: 900 12px/1 ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .top-actions {
   display: flex;
   align-items: center;
@@ -141,11 +149,113 @@ select {
 
 .tool-panel,
 .output-panel,
-.history-card {
+.history-card,
+.page-panel,
+.page-card,
+.case-card,
+.settings-list article {
   border: 1px solid #ddd4c2;
   border-radius: 8px;
   background: rgba(255, 250, 240, 0.84);
   box-shadow: 0 18px 50px rgba(53, 45, 31, 0.14);
+}
+
+.page-workspace {
+  grid-column: 2 / -1;
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 1100px;
+}
+
+.page-topbar {
+  align-items: start;
+}
+
+.page-panel {
+  overflow: hidden;
+}
+
+.page-card-grid,
+.case-grid,
+.settings-list {
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+
+.page-card-grid,
+.case-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.page-card,
+.case-card,
+.settings-list article {
+  box-shadow: none;
+  padding: 16px;
+}
+
+.page-card {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 12px;
+}
+
+.page-card h3,
+.case-card h3,
+.settings-list strong {
+  margin: 0 0 8px;
+  font: 900 15px/1.25 ui-sans-serif, system-ui, sans-serif;
+}
+
+.page-card p,
+.case-card p,
+.settings-list p,
+.page-note {
+  margin: 0;
+  color: #5f594e;
+  font: 600 13px/1.65 ui-sans-serif, system-ui, sans-serif;
+}
+
+.page-note {
+  padding: 0 18px 18px;
+}
+
+.case-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+}
+
+.case-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.case-tags span,
+.settings-list span {
+  border-radius: 999px;
+  color: #0b6b58;
+  font: 900 11px/1 ui-sans-serif, system-ui, sans-serif;
+}
+
+.case-tags span {
+  padding: 7px 9px;
+  background: rgba(11, 107, 88, 0.09);
+}
+
+.compact-action {
+  min-height: 40px;
+  padding: 0 12px;
+}
+
+.settings-list {
+  grid-template-columns: 1fr;
+}
+
+.settings-list article {
+  display: grid;
+  gap: 8px;
 }
 
 .panel-heading {
@@ -454,6 +564,15 @@ select {
   }
 
   .workspace {
+    grid-template-columns: 1fr;
+  }
+
+  .page-workspace {
+    grid-column: 2;
+  }
+
+  .page-card-grid,
+  .case-grid {
     grid-template-columns: 1fr;
   }
 

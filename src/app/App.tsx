@@ -1,5 +1,5 @@
 import { Copy, History, ImageIcon, Loader2, Sparkles, Wand2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEvent } from "react";
 import type {
   PromptCategory,
   PromptMode,
@@ -17,6 +17,27 @@ const navItems = [
   { href: "#cases", label: "提示词案例" },
   { href: "#account", label: "账户设置" },
 ] as const;
+
+const promptCases = [
+  {
+    title: "雨夜电影人像",
+    category: "portrait_photography" as PromptCategory,
+    idea: "雨夜上海街头，穿风衣的人物站在霓虹灯下，湿润柏油路反光，电影剧照质感。",
+    tags: ["35mm", "霓虹", "自然肤质"],
+  },
+  {
+    title: "玻璃拟态 UI 系统",
+    category: "ui_social_mockup" as PromptCategory,
+    idea: "一个深色玻璃拟态 AI 工具仪表盘，复杂但清晰的控件层级，高级产品官网展示图。",
+    tags: ["UI mockup", "深色玻璃", "产品展示"],
+  },
+  {
+    title: "高端产品广告",
+    category: "product_ad" as PromptCategory,
+    idea: "一瓶高端香水立在岩石与水雾之间，金色晨光穿过玻璃瓶身，商业广告大片。",
+    tags: ["商业摄影", "材质", "高级光线"],
+  },
+];
 
 type WorkbenchStatus = "idle" | "enhancing" | "generating";
 
@@ -36,6 +57,7 @@ export function App() {
   const [activeNav, setActiveNav] = useState(() => getCurrentHash());
   const isBusy = status !== "idle";
   const score = promptPackage?.promptScore ?? 82;
+  const activeNavLabel = navItems.find((item) => item.href === activeNav)?.label ?? "新建生成";
 
   useEffect(() => {
     function handleHashChange() {
@@ -43,7 +65,11 @@ export function App() {
     }
 
     window.addEventListener("hashchange", handleHashChange);
-    return () => window.removeEventListener("hashchange", handleHashChange);
+    window.addEventListener("popstate", handleHashChange);
+    return () => {
+      window.removeEventListener("hashchange", handleHashChange);
+      window.removeEventListener("popstate", handleHashChange);
+    };
   }, []);
 
   async function handleEnhance() {
@@ -144,6 +170,23 @@ export function App() {
     setNotice("完整历史记录会在登录与付费能力接入后开放，当前先展示最近 4 条。露个小尾巴，但不装作已经有后台。");
   }
 
+  function handleNavigate(hash: string, event: MouseEvent<HTMLAnchorElement>) {
+    event.preventDefault();
+    setActiveNav(hash);
+    window.history.pushState(null, "", hash);
+  }
+
+  function handleUseCase(caseItem: (typeof promptCases)[number]) {
+    setIdea(caseItem.idea);
+    setCategory(caseItem.category);
+    setPromptPackage(null);
+    setGeneratedImage(null);
+    setError(null);
+    setNotice(`已载入案例：${caseItem.title}，可以直接增强提示词。`);
+    setActiveNav("#new");
+    window.history.pushState(null, "", "#new");
+  }
+
   return (
     <main className="app-shell">
       <aside className="sidebar" aria-label="Navigation">
@@ -162,7 +205,7 @@ export function App() {
                 href={item.href}
                 aria-current={isActive ? "page" : undefined}
                 key={item.href}
-                onClick={() => setActiveNav(item.href)}
+                onClick={(event) => handleNavigate(item.href, event)}
               >
                 {item.label}
               </a>
@@ -171,6 +214,7 @@ export function App() {
         </nav>
       </aside>
 
+      {activeNav === "#new" ? (
       <section className="workspace">
         <header className="topbar">
           <div>
@@ -354,7 +398,88 @@ export function App() {
           </div>
         </section>
       </section>
+      ) : (
+        <section className="workspace page-workspace">
+          <header className="topbar page-topbar">
+            <div>
+              <p className="eyebrow">{activeNavLabel}</p>
+              <h1>{activeNavLabel}</h1>
+              <p>{pageSubtitleFor(activeNav)}</p>
+            </div>
+          </header>
+          {activeNav === "#history" ? (
+            <section className="page-panel" aria-labelledby="history-page-title">
+              <div className="panel-heading">
+                <h2 id="history-page-title">最近尝试</h2>
+                <span>{recentItems.length} 条记录</span>
+              </div>
+              <div className="page-card-grid">
+                {recentItems.map((item) => (
+                  <article className="page-card" key={`${item.title}-${item.meta}`}>
+                    <div className={`thumb ${item.accent}`} />
+                    <div>
+                      <h3>{item.title}</h3>
+                      <p>{item.meta}</p>
+                    </div>
+                  </article>
+                ))}
+              </div>
+              <p className="page-note">当前是 Demo 本地展示。登录、用户历史和云端检索会在付费能力接入后开放。</p>
+            </section>
+          ) : null}
+          {activeNav === "#cases" ? (
+            <section className="page-panel" aria-labelledby="cases-page-title">
+              <div className="panel-heading">
+                <h2 id="cases-page-title">可复用案例</h2>
+                <span>点击载入</span>
+              </div>
+              <div className="case-grid">
+                {promptCases.map((caseItem) => (
+                  <article className="case-card" key={caseItem.title}>
+                    <h3>{caseItem.title}</h3>
+                    <p>{caseItem.idea}</p>
+                    <div className="case-tags">
+                      {caseItem.tags.map((tag) => (
+                        <span key={tag}>{tag}</span>
+                      ))}
+                    </div>
+                    <button type="button" className="secondary compact-action" onClick={() => handleUseCase(caseItem)}>
+                      载入到新建生成
+                    </button>
+                  </article>
+                ))}
+              </div>
+            </section>
+          ) : null}
+          {activeNav === "#account" ? (
+            <section className="page-panel" aria-labelledby="account-page-title">
+              <div className="panel-heading">
+                <h2 id="account-page-title">账户与配置</h2>
+                <span>Demo Free</span>
+              </div>
+              <div className="settings-list">
+                <article>
+                  <span>当前模式</span>
+                  <strong>免登录 Demo</strong>
+                  <p>现在先开放提示词增强和页面体验，后续接入登录后再保存个人历史。</p>
+                </article>
+                <article>
+                  <span>模型服务</span>
+                  <strong>OpenAI-compatible</strong>
+                  <p>提示词增强已连接兼容模型服务；图片生成需要上游继续开放 image generation 接口。</p>
+                </article>
+                <article>
+                  <span>付费能力</span>
+                  <strong>预留中</strong>
+                  <p>订阅、额度、历史检索和云端图库会在下一阶段补齐。</p>
+                </article>
+              </div>
+            </section>
+          ) : null}
+        </section>
+      )}
 
+      {activeNav === "#new" ? (
       <aside className="history-rail" aria-labelledby="recent-title">
         <div className="panel-heading">
           <h2 id="recent-title">
@@ -375,8 +500,21 @@ export function App() {
           ))}
         </div>
       </aside>
+      ) : null}
     </main>
   );
+}
+
+function pageSubtitleFor(hash: string): string {
+  if (hash === "#history") {
+    return "查看最近生成与增强记录。现在是轻量 Demo，后续会接入登录后的完整历史。";
+  }
+
+  if (hash === "#cases") {
+    return "从高质量案例开始，一键带入新建生成，再按你的想法继续微调。";
+  }
+
+  return "查看当前账户状态、模型服务和后续付费能力规划。";
 }
 
 function getCurrentHash(): string {
