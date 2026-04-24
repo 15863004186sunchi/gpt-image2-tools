@@ -1,0 +1,655 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>GPT Image 2 Prompt Studio MVP Mockup</title>
+    <style>
+      :root {
+        --ink: #161511;
+        --muted: #686257;
+        --paper: #f7f3ea;
+        --panel: #fffaf0;
+        --line: #ddd4c2;
+        --accent: #0b6b58;
+        --accent-2: #b3362d;
+        --gold: #d9a441;
+        --sky: #d9e8ec;
+        --shadow: 0 18px 50px rgba(53, 45, 31, 0.14);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        color: var(--ink);
+        background:
+          linear-gradient(135deg, rgba(217, 232, 236, 0.85), transparent 38%),
+          radial-gradient(circle at 80% 10%, rgba(217, 164, 65, 0.24), transparent 34%),
+          repeating-linear-gradient(90deg, rgba(22, 21, 17, 0.03) 0 1px, transparent 1px 80px),
+          var(--paper);
+        font-family: "Noto Serif SC", "Source Han Serif SC", Georgia, serif;
+      }
+
+      button,
+      input,
+      textarea,
+      select {
+        font: inherit;
+      }
+
+      .shell {
+        min-height: 100vh;
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr) 300px;
+      }
+
+      .sidebar {
+        border-right: 1px solid var(--line);
+        padding: 22px 18px;
+        background: rgba(255, 250, 240, 0.72);
+        backdrop-filter: blur(18px);
+      }
+
+      .brand {
+        font-size: 21px;
+        line-height: 1.1;
+        font-weight: 800;
+        margin-bottom: 28px;
+      }
+
+      .nav-title {
+        margin: 22px 0 8px;
+        color: var(--muted);
+        font: 700 11px/1.2 ui-sans-serif, system-ui, sans-serif;
+        text-transform: uppercase;
+      }
+
+      .nav-item {
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-radius: 6px;
+        padding: 0 10px;
+        color: #2b2821;
+        font: 600 14px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .nav-item.active {
+        background: var(--accent);
+        color: white;
+      }
+
+      .count {
+        color: inherit;
+        opacity: 0.72;
+        font-size: 12px;
+      }
+
+      .workspace {
+        padding: 32px 28px;
+        display: grid;
+        grid-template-columns: minmax(420px, 520px) minmax(640px, 1fr);
+        gap: 24px;
+        align-content: start;
+      }
+
+      .topbar {
+        grid-column: 1 / -1;
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .title {
+        margin: 0;
+        font-size: 34px;
+        line-height: 1.05;
+        letter-spacing: 0;
+      }
+
+      .subtitle {
+        margin: 9px 0 0;
+        color: var(--muted);
+        font: 500 14px/1.6 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .mode-switch {
+        display: inline-grid;
+        grid-template-columns: 1fr 1fr;
+        min-width: 230px;
+        padding: 4px;
+        gap: 4px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 250, 240, 0.7);
+      }
+
+      .top-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .mode-switch button {
+        border: 0;
+        border-radius: 5px;
+        background: transparent;
+        padding: 9px 14px;
+        color: var(--muted);
+        cursor: default;
+      }
+
+      .mode-switch .selected {
+        color: white;
+        background: var(--ink);
+      }
+
+      .account-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        height: 38px;
+        padding: 0 11px 0 8px;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: #fffdf7;
+        color: #2f2b24;
+        font: 800 12px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .avatar {
+        display: grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: white;
+        background: var(--accent);
+        font-size: 11px;
+      }
+
+      .tool-pane,
+      .result-pane,
+      .history-pane {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: rgba(255, 250, 240, 0.82);
+        box-shadow: var(--shadow);
+      }
+
+      .pane-head {
+        min-height: 54px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+
+      .pane-head h2 {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.1;
+      }
+
+      .status {
+        color: var(--accent);
+        font: 700 12px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .text-link {
+        border: 0;
+        background: transparent;
+        color: var(--accent);
+        padding: 0;
+        font: 800 12px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .tool-body {
+        padding: 16px;
+      }
+
+      .field {
+        margin-bottom: 15px;
+      }
+
+      .field label {
+        display: block;
+        margin-bottom: 7px;
+        color: #373229;
+        font: 700 12px/1.2 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      textarea,
+      select,
+      input {
+        width: 100%;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #fffdf7;
+        color: var(--ink);
+        outline: none;
+      }
+
+      textarea {
+        min-height: 126px;
+        resize: vertical;
+        padding: 12px;
+        line-height: 1.55;
+      }
+
+      select,
+      input {
+        height: 38px;
+        padding: 0 10px;
+      }
+
+      .grid-2 {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+      }
+
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .chip {
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 7px 10px;
+        background: #fffdf7;
+        color: #352f26;
+        font: 700 12px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .chip.active {
+        border-color: var(--accent);
+        color: white;
+        background: var(--accent);
+      }
+
+      .actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-top: 16px;
+      }
+
+      .primary,
+      .secondary {
+        height: 44px;
+        border-radius: 7px;
+        border: 0;
+        font: 800 14px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .primary {
+        color: white;
+        background: var(--accent-2);
+      }
+
+      .secondary {
+        color: var(--ink);
+        background: var(--sky);
+      }
+
+      .result-grid {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: minmax(280px, 0.85fr) minmax(330px, 1fr);
+        gap: 18px;
+        align-items: start;
+      }
+
+      .preview {
+        aspect-ratio: 2 / 3;
+        max-height: 560px;
+        overflow: hidden;
+        border-radius: 8px;
+        border: 1px solid var(--line);
+        background: #ece3d2;
+      }
+
+      .preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+
+      .prompt-box {
+        min-width: 0;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .prompt-section {
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 7px;
+        background: #fffdf7;
+      }
+
+      .prompt-section h3 {
+        margin: 0 0 7px;
+        font: 800 12px/1 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      .prompt-section p {
+        margin: 0;
+        color: #413b31;
+        font: 500 13px/1.55 ui-sans-serif, system-ui, sans-serif;
+        overflow-wrap: anywhere;
+      }
+
+      .history-pane {
+        border-radius: 0;
+        border-top: 0;
+        border-right: 0;
+        border-bottom: 0;
+        box-shadow: none;
+        background: rgba(255, 250, 240, 0.66);
+      }
+
+      .history-body {
+        padding: 14px;
+        display: grid;
+        gap: 12px;
+      }
+
+      .history-card {
+        display: grid;
+        grid-template-columns: 68px 1fr;
+        gap: 10px;
+        padding: 9px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fffdf7;
+      }
+
+      .history-card img {
+        width: 68px;
+        height: 84px;
+        border-radius: 6px;
+        object-fit: cover;
+      }
+
+      .history-card strong {
+        display: block;
+        margin: 4px 0 5px;
+        font-size: 14px;
+        line-height: 1.22;
+      }
+
+      .history-card span {
+        color: var(--muted);
+        font: 600 12px/1.35 ui-sans-serif, system-ui, sans-serif;
+      }
+
+      @media (max-width: 1180px) {
+        .shell {
+          grid-template-columns: 86px minmax(0, 1fr);
+        }
+
+        .sidebar {
+          padding: 16px 10px;
+        }
+
+        .brand {
+          font-size: 16px;
+        }
+
+        .nav-item span:first-child,
+        .nav-title,
+        .count {
+          display: none;
+        }
+
+        .history-pane {
+          grid-column: 2;
+          border-left: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 1540px) and (min-width: 1181px) {
+        .shell {
+          grid-template-columns: 224px minmax(0, 1fr);
+        }
+
+        .workspace {
+          grid-template-columns: minmax(390px, 500px) minmax(560px, 1fr);
+        }
+
+        .history-pane {
+          grid-column: 2;
+          border-left: 1px solid var(--line);
+          border-top: 1px solid var(--line);
+        }
+
+        .history-body {
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 1280px) {
+        .workspace {
+          grid-template-columns: 1fr;
+        }
+
+        .result-grid {
+          grid-template-columns: minmax(260px, 360px) minmax(320px, 1fr);
+        }
+      }
+
+      @media (max-width: 940px) {
+        .shell,
+        .workspace,
+        .result-grid {
+          display: block;
+        }
+
+        .sidebar {
+          display: none;
+        }
+
+        .workspace {
+          padding: 18px;
+        }
+
+        .topbar {
+          display: block;
+          margin-bottom: 16px;
+        }
+
+        .title {
+          font-size: 28px;
+        }
+
+        .mode-switch {
+          width: 100%;
+          margin-top: 16px;
+        }
+
+        .top-actions {
+          display: grid;
+          grid-template-columns: 1fr;
+          justify-items: stretch;
+        }
+
+        .account-pill {
+          justify-content: center;
+        }
+
+        .tool-pane,
+        .result-pane {
+          margin-bottom: 16px;
+        }
+
+        .preview {
+          margin-bottom: 14px;
+        }
+
+        .history-pane {
+          border: 1px solid var(--line);
+          border-radius: 8px;
+          margin: 0 18px 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <aside class="sidebar">
+        <div class="brand">Image 2<br />Prompt Studio</div>
+        <div class="nav-title">工作台</div>
+        <div class="nav-item active"><span>新建生成</span><span class="count">12</span></div>
+        <div class="nav-item"><span>我的历史</span><span class="count">48</span></div>
+        <div class="nav-item"><span>提示词案例</span><span class="count">132</span></div>
+        <div class="nav-title">风格库</div>
+        <div class="nav-item"><span>人像摄影</span><span class="count">18</span></div>
+        <div class="nav-item"><span>电影海报</span><span class="count">59</span></div>
+        <div class="nav-item"><span>产品商业图</span><span class="count">21</span></div>
+      </aside>
+
+      <section class="workspace">
+        <div class="topbar">
+          <div>
+            <h1 class="title">把一句想法变成可出片的专业提示词</h1>
+            <p class="subtitle">先增强 prompt，再调用 gpt-image-2 出图；登录后自动保存每一次尝试。</p>
+          </div>
+          <div class="top-actions">
+            <div class="mode-switch" aria-label="mode switch">
+              <button class="selected">普通模式</button>
+              <button>专业模式</button>
+            </div>
+            <div class="account-pill" aria-label="account">
+              <span class="avatar">K</span>
+              <span>已登录</span>
+            </div>
+          </div>
+        </div>
+
+        <section class="tool-pane">
+          <div class="pane-head">
+            <h2>创作输入</h2>
+            <span class="status">草稿质量: 82</span>
+          </div>
+          <div class="tool-body">
+            <div class="field">
+              <label for="idea">画面想法</label>
+              <textarea id="idea">一个雨夜的上海街头，穿风衣的女性站在霓虹灯下，像电影剧照一样真实。</textarea>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="type">图像类型</label>
+                <select id="type">
+                  <option>照片 / 电影剧照</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="size">比例与尺寸</label>
+                <select id="size">
+                  <option>1024x1536 竖图</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label>快速风格</label>
+              <div class="chips">
+                <span class="chip active">35mm 胶片</span>
+                <span class="chip">霓虹夜景</span>
+                <span class="chip">商业广告</span>
+                <span class="chip">自然肤质</span>
+                <span class="chip">低饱和</span>
+              </div>
+            </div>
+            <div class="grid-2">
+              <div class="field">
+                <label for="lens">镜头</label>
+                <select id="lens">
+                  <option>50mm 中景</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="quality">质量</label>
+                <select id="quality">
+                  <option>medium 先迭代</option>
+                </select>
+              </div>
+            </div>
+            <div class="actions">
+              <button class="secondary">增强提示词</button>
+              <button class="primary">生成图片</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="result-pane">
+          <div class="pane-head">
+            <h2>输出预览</h2>
+            <span class="status">gpt-image-2</span>
+          </div>
+          <div class="result-grid">
+            <div class="preview">
+              <img src="../../awesome-gpt-image-2-prompts/images/portrait_case1/output.jpg" alt="Generated style preview" />
+            </div>
+            <div class="prompt-box">
+              <section class="prompt-section">
+                <h3>Master Prompt</h3>
+                <p>Ultra-realistic cinematic 35mm film still, rainy Shanghai street at night, neon reflections on wet asphalt, elegant woman in trench coat, natural skin texture, subtle film grain, balanced composition, moody editorial lighting.</p>
+              </section>
+              <section class="prompt-section">
+                <h3>Negative Guardrails</h3>
+                <p>No plastic skin, no watermark, no distorted hands, no extra limbs, no over-sharpening, no fake CGI look, no unreadable text.</p>
+              </section>
+              <section class="prompt-section">
+                <h3>中文解释</h3>
+                <p>系统会把用户的一句话拆成主体、场景、镜头、光线、材质、构图、质量和排除项，再根据案例库补全缺失的摄影语言。</p>
+              </section>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <aside class="history-pane">
+        <div class="pane-head">
+          <h2>最近生成</h2>
+          <button class="text-link">查看全部</button>
+        </div>
+        <div class="history-body">
+          <article class="history-card">
+            <img src="../../awesome-gpt-image-2-prompts/images/poster_case11/output.jpg" alt="History item" />
+            <div>
+              <strong>超现实锦鲤星云海报</strong>
+              <span>高质量海报 · high · 2 分钟前</span>
+            </div>
+          </article>
+          <article class="history-card">
+            <img src="../../awesome-gpt-image-2-prompts/images/ui_case26/output.jpg" alt="History item" />
+            <div>
+              <strong>玻璃拟态 UI 设计系统</strong>
+              <span>UI mockup · medium · 昨天</span>
+            </div>
+          </article>
+          <article class="history-card">
+            <img src="../../awesome-gpt-image-2-prompts/images/character_case2/output.jpg" alt="History item" />
+            <div>
+              <strong>角色设定参考卡</strong>
+              <span>角色设计 · low · 周二</span>
+            </div>
+          </article>
+        </div>
+      </aside>
+    </main>
+  </body>
+</html>
