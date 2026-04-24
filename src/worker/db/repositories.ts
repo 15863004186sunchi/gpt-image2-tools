@@ -1,5 +1,15 @@
 type D1Like = Pick<D1Database, "prepare">;
 
+export interface UserUpsert {
+  id: string;
+  email: string;
+  displayName: string;
+  avatarUrl?: string | null;
+  plan: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface PromptEnhancementCreate {
   id: string;
   userId: string;
@@ -59,6 +69,17 @@ export interface UsageEventCreate {
   createdAt: string;
 }
 
+export interface GeneratedImageCreate {
+  id: string;
+  generationId: string;
+  userId: string;
+  r2Key: string;
+  width?: number | null;
+  height?: number | null;
+  contentType: string;
+  createdAt: string;
+}
+
 interface GenerationRow {
   id: string;
   user_id: string;
@@ -74,6 +95,31 @@ interface GenerationRow {
   usage_json?: string | null;
   created_at: string;
   completed_at?: string | null;
+}
+
+export async function upsertUser(db: D1Like, input: UserUpsert): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO users (
+        id, email, display_name, avatar_url, plan, created_at, updated_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET
+        email = excluded.email,
+        display_name = excluded.display_name,
+        avatar_url = excluded.avatar_url,
+        plan = excluded.plan,
+        updated_at = excluded.updated_at`,
+    )
+    .bind(
+      input.id,
+      input.email,
+      input.displayName,
+      input.avatarUrl ?? null,
+      input.plan,
+      input.createdAt,
+      input.updatedAt,
+    )
+    .run();
 }
 
 export async function createPromptEnhancement(
@@ -173,6 +219,29 @@ export async function recordUsageEvent(db: D1Like, input: UsageEventCreate): Pro
       input.generationId ?? null,
       input.estimatedCostUsd ?? null,
       input.usageJson ?? null,
+      input.createdAt,
+    )
+    .run();
+}
+
+export async function createGeneratedImage(
+  db: D1Like,
+  input: GeneratedImageCreate,
+): Promise<void> {
+  await db
+    .prepare(
+      `INSERT INTO generated_images (
+        id, generation_id, user_id, r2_key, width, height, content_type, created_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      input.id,
+      input.generationId,
+      input.userId,
+      input.r2Key,
+      input.width ?? null,
+      input.height ?? null,
+      input.contentType,
       input.createdAt,
     )
     .run();
