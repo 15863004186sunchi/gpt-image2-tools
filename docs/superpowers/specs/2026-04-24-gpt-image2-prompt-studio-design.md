@@ -35,6 +35,8 @@ Main screens:
 
 The local visual mockup is at `docs/mockups/gpt-image2-tool-mvp.html`.
 
+Implementation is tracked in `docs/superpowers/plans/2026-04-24-gpt-image2-prompt-studio-mvp.md`.
+
 ## MVP Features
 
 - Quick mode: one text box, style category, aspect ratio, quality, and one-click enhance/generate.
