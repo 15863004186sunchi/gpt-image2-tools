@@ -115,7 +115,7 @@ select {
 .chip,
 .copy-button {
   border: 0;
-  cursor: default;
+  cursor: pointer;
 }
 
 .mode-switch button {
@@ -177,6 +177,10 @@ select {
   display: grid;
   gap: 8px;
   padding: 16px 18px 0;
+}
+
+.compact-field {
+  max-width: 280px;
 }
 
 .field span {
@@ -250,6 +254,13 @@ select {
   font: 900 14px/1 ui-sans-serif, system-ui, sans-serif;
 }
 
+.primary:disabled,
+.secondary:disabled,
+.copy-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
 .primary {
   color: #fff;
   background: #b3362d;
@@ -278,6 +289,19 @@ select {
   color: #686257;
   background: rgba(217, 232, 236, 0.45);
   font: 800 13px/1 ui-sans-serif, system-ui, sans-serif;
+  text-align: center;
+}
+
+.image-placeholder strong {
+  color: #0b6b58;
+}
+
+.image-placeholder.has-image {
+  border-style: solid;
+  color: #302c24;
+  background:
+    radial-gradient(circle at 40% 30%, rgba(217, 164, 65, 0.25), transparent 32%),
+    linear-gradient(145deg, rgba(217, 232, 236, 0.82), rgba(255, 250, 240, 0.88));
 }
 
 .prompt-stack {
@@ -311,6 +335,28 @@ select {
   background: #d9e8ec;
 }
 
+.status-message {
+  margin: -4px 18px 18px;
+  border-radius: 7px;
+  padding: 10px 12px;
+  font: 800 12px/1.4 ui-sans-serif, system-ui, sans-serif;
+}
+
+.status-message.error {
+  color: #8b2d25;
+  background: rgba(179, 54, 45, 0.1);
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .history-rail {
   border-left: 1px solid #ddd4c2;
 }
@@ -336,6 +382,24 @@ select {
   background:
     linear-gradient(135deg, rgba(179, 54, 45, 0.9), transparent),
     linear-gradient(45deg, #161511, #d9a441);
+}
+
+.thumb.poster {
+  background:
+    linear-gradient(135deg, rgba(217, 164, 65, 0.9), transparent),
+    linear-gradient(45deg, #161511, #b3362d);
+}
+
+.thumb.ui {
+  background:
+    linear-gradient(135deg, rgba(217, 232, 236, 0.9), transparent),
+    linear-gradient(45deg, #161511, #0b6b58);
+}
+
+.thumb.generated {
+  background:
+    linear-gradient(135deg, rgba(11, 107, 88, 0.9), transparent),
+    linear-gradient(45deg, #161511, #f7f3ea);
 }
 
 @media (max-width: 1540px) and (min-width: 1181px) {
