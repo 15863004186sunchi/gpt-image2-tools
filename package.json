@@ -12,6 +12,7 @@
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "deploy": "wrangler deploy",
+    "deploy:cf": "powershell -ExecutionPolicy Bypass -File ./scripts/deploy-cloudflare.ps1",
     "cf:types": "wrangler types src/worker/worker-configuration.d.ts"
   },
   "dependencies": {

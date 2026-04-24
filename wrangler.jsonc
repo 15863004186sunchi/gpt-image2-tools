@@ -14,7 +14,7 @@
     "head_sampling_rate": 1
   },
   "vars": {
-    "ENVIRONMENT": "local",
+    "ENVIRONMENT": "production",
     "OPENAI_IMAGE_MODEL": "gpt-image-2",
     "OPENAI_TEXT_MODEL": "gpt-5.4-mini",
     "OPENAI_BASE_URL": "https://api.openai.com"
@@ -23,14 +23,17 @@
     {
       "binding": "DB",
       "database_name": "gpt-image2-tools-db",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "7e5f0c33-7097-4ebc-a4b0-5d38c114aa93",
       "migrations_dir": "./migrations"
     }
   ],
-  "r2_buckets": [
+  "account_id": "a7d01bd307ceb8d4b80e07287272f128",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
     {
-      "binding": "IMAGES",
-      "bucket_name": "gpt-image2-tools-images"
+      "pattern": "397858.xyz/*",
+      "zone_id": "c6a3f1d66782de27e8d586ad03da7f7b"
     }
   ]
 }

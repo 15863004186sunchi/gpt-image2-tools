@@ -1,7 +1,7 @@
 export interface Env {
   ASSETS: Fetcher;
   DB: D1Database;
-  IMAGES: R2Bucket;
+  IMAGES?: R2Bucket;
   ENVIRONMENT: string;
   OPENAI_API_KEY?: string;
   OPENAI_BASE_URL: string;

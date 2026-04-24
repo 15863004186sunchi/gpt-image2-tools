@@ -30,6 +30,31 @@ npm run dev:worker
 
 Put your real OpenAI key in `.dev.vars`. Do not commit `.dev.vars`.
 
+## One-Click Cloudflare Deploy
+
+This repository includes a PowerShell deployment script that creates or reuses the D1 database and R2 bucket, writes the D1 ID back to `wrangler.jsonc`, applies remote migrations, sets Worker secrets, builds assets, deploys a Worker Route for `397858.xyz/*`, and verifies `https://397858.xyz/api/health`.
+
+If R2 is not enabled for the Cloudflare account yet, the script deploys without the R2 binding so the workbench and prompt enhancement flow can go live. Image generation will return an R2 configuration error until R2 is enabled and the script is run again.
+
+The root domain must have at least one proxied Cloudflare DNS record so the Worker Route can receive traffic.
+
+Set these environment variables first:
+
+```powershell
+$env:CLOUDFLARE_API_TOKEN = "<cloudflare-api-token>"
+$env:CLOUDFLARE_ACCOUNT_ID = "<cloudflare-account-id>"
+$env:CLOUDFLARE_ZONE_ID = "<cloudflare-zone-id>"
+$env:OPENAI_API_KEY = "<openai-api-key>"
+```
+
+Then deploy:
+
+```powershell
+npm run deploy:cf
+```
+
+If `OPENAI_API_KEY` is not set, the site still deploys, but image generation will return a missing OpenAI key error until the secret is added.
+
 ## Cloudflare Resources
 
 Create the D1 database and R2 bucket:
