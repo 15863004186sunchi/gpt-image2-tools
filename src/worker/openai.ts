@@ -23,7 +23,8 @@ export interface OpenAiImageInput {
 }
 
 export interface OpenAiImageResult {
-  b64Json: string;
+  b64Json?: string;
+  url?: string;
   revisedPrompt: string | null;
   usage: Record<string, unknown> | null;
 }
@@ -31,6 +32,7 @@ export interface OpenAiImageResult {
 interface OpenAiImageResponse {
   data?: Array<{
     b64_json?: string;
+    url?: string;
     revised_prompt?: string;
   }>;
   usage?: Record<string, unknown>;
@@ -81,7 +83,7 @@ export async function generateImageWithOpenAI(
   }
 
   const fetcher = config.fetcher ?? fetch;
-  const response = await fetcher(`${trimTrailingSlash(config.baseUrl)}/v1/images/generations`, {
+  const response = await fetcher(`${buildOpenAiV1BaseUrl(config.baseUrl)}/images/generations`, {
     method: "POST",
     headers,
     body: JSON.stringify(payload),
@@ -94,10 +96,10 @@ export async function generateImageWithOpenAI(
   const body = (await response.json()) as OpenAiImageResponse;
   const image = body.data?.[0];
 
-  if (!image?.b64_json) {
+  if (!image?.b64_json && !image?.url) {
     throw new OpenAiServiceError(
       "empty_image_response",
-      "OpenAI did not return image data",
+      "OpenAI-compatible service did not return image data",
       502,
       body,
     );
@@ -105,6 +107,7 @@ export async function generateImageWithOpenAI(
 
   return {
     b64Json: image.b64_json,
+    url: image.url,
     revisedPrompt: image.revised_prompt ?? null,
     usage: body.usage ?? null,
   };
@@ -131,6 +134,8 @@ async function buildOpenAiError(response: Response): Promise<OpenAiServiceError>
   }
 }
 
-function trimTrailingSlash(baseUrl: string): string {
-  return baseUrl.replace(/\/+$/, "");
+function buildOpenAiV1BaseUrl(baseUrl: string): string {
+  const trimmedBaseUrl = baseUrl.replace(/\/+$/, "");
+
+  return trimmedBaseUrl.endsWith("/v1") ? trimmedBaseUrl : `${trimmedBaseUrl}/v1`;
 }

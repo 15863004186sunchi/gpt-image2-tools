@@ -263,6 +263,64 @@ describe("worker routes", () => {
     ]);
   });
 
+  it("generates an inline preview when R2 is unavailable", async () => {
+    const db = new FakeD1();
+    const fetcher: WorkerServices["fetcher"] = async () =>
+      Response.json({
+        data: [
+          {
+            b64_json: "aGk=",
+            revised_prompt: "inline revised portrait",
+          },
+        ],
+      });
+
+    const response = await fetchApi(
+      "/api/images/generate",
+      {
+        method: "POST",
+        body: JSON.stringify({
+          promptPackage: {
+            masterPrompt: "cinematic portrait",
+            negativePrompt: "no watermark",
+            settings: {
+              model: "gpt-image-2",
+              quality: "medium",
+              size: "1024x1536",
+              outputFormat: "jpeg",
+            },
+          },
+        }),
+      },
+      makeEnv({
+        DB: db as unknown as D1Database,
+        OPENAI_API_KEY: "test-key",
+      }),
+      {
+        fetcher,
+        idFactory: (prefix) => `${prefix}_inline`,
+        now: () => new Date("2026-04-24T00:00:00.000Z"),
+      },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      image: {
+        key: "inline/gen_inline/img_inline.jpeg",
+        url: "data:image/jpeg;base64,aGk=",
+        storage: "inline",
+        sizeBytes: 2,
+      },
+      revisedPrompt: "inline revised portrait",
+    });
+    expect(db.records.map((record) => record.sql)).toEqual([
+      expect.stringContaining("INSERT INTO users"),
+      expect.stringContaining("INSERT INTO generations"),
+      expect.stringContaining("UPDATE generations"),
+      expect.stringContaining("INSERT INTO usage_events"),
+    ]);
+  });
+
   it("returns 422 when image generation input is incomplete", async () => {
     const response = await fetchApi(
       "/api/images/generate",

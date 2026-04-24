@@ -168,6 +168,8 @@ function Update-WranglerConfig {
   )
 
   $Config.vars.ENVIRONMENT = "production"
+  $Config.compatibility_flags = @("nodejs_compat")
+  $Config.vars.OPENAI_BASE_URL = "http://model.397858.xyz:8088/v1"
   $Config.d1_databases[0].database_name = $D1Name
   $Config.d1_databases[0].database_id = $D1DatabaseId
   $Config.d1_databases[0].migrations_dir = "./migrations"
@@ -209,13 +211,13 @@ function Set-WorkerSecret {
     return
   }
 
-  $TempFile = New-TemporaryFile
-  try {
-    Set-Content -Path $TempFile -Value $Value -NoNewline -Encoding utf8
-    Get-Content -Path $TempFile -Raw | npx wrangler secret put $Name
-  } finally {
-    Remove-Item -LiteralPath $TempFile -Force -ErrorAction SilentlyContinue
-  }
+  Invoke-CfApi -Method "PUT" -Path "/accounts/$script:CloudflareAccountId/workers/scripts/$WorkerName/secrets" -Body @{
+    name = $Name
+    text = $Value
+    type = "secret_text"
+  } | Out-Null
+
+  Write-Host "Updated Worker secret: $Name"
 }
 
 function Test-ProductionHealth {

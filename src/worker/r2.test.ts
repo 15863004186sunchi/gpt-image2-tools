@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { storeGeneratedImage } from "./r2";
+import { dataUrlForBase64Image, sizeBytesForBase64Image, storeGeneratedImage } from "./r2";
 
 interface PutCall {
   key: string;
@@ -82,5 +82,10 @@ describe("R2 image storage", () => {
 
     expect(bucket.puts[0].options?.httpMetadata?.contentType).toBe("image/webp");
     expect(bucket.puts[0].key).toBe("generated/gen_1/img_2.webp");
+  });
+
+  it("builds inline image fallbacks when R2 is unavailable", () => {
+    expect(dataUrlForBase64Image("aGk=", "png")).toBe("data:image/png;base64,aGk=");
+    expect(sizeBytesForBase64Image("aGk=")).toBe(2);
   });
 });

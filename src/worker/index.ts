@@ -12,7 +12,8 @@ import {
 } from "./db/repositories";
 import { HttpError, jsonError, jsonOk, readJson } from "./http";
 import { generateImageWithOpenAI, OpenAiServiceError } from "./openai";
-import { storeGeneratedImage } from "./r2";
+import { enhancePromptWithOpenAICompatibleModel } from "./prompt-ai";
+import { contentTypeForOutputFormat, dataUrlForBase64Image, sizeBytesForBase64Image, storeGeneratedImage } from "./r2";
 
 export type WorkerFetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>;
 
@@ -60,7 +61,17 @@ export async function handleRequest(
         throw new HttpError(422, "Idea is required");
       }
 
-      const promptPackage = buildFallbackPromptPackage(input);
+      const fallbackPromptPackage = buildFallbackPromptPackage(input);
+      const promptPackage = await enhancePromptWithOpenAICompatibleModel(
+        {
+          apiKey: env.OPENAI_API_KEY,
+          baseUrl: env.OPENAI_BASE_URL,
+          textModel: env.OPENAI_TEXT_MODEL,
+          fetcher: services.fetcher,
+        },
+        input,
+        fallbackPromptPackage,
+      );
 
       if (env.DB) {
         const user = getDemoUser();
@@ -133,10 +144,6 @@ async function handleImageGeneration(
     throw new HttpError(503, "D1 database binding is not configured");
   }
 
-  if (!env.IMAGES) {
-    throw new HttpError(503, "R2 image bucket binding is not configured");
-  }
-
   const user = getDemoUser();
   const createdAt = nowIso(services);
   const generationId = makeId("gen", services);
@@ -179,28 +186,46 @@ async function handleImageGeneration(
       moderation: "auto",
     },
   );
-  const image = await storeGeneratedImage(
-    env.IMAGES,
-    {
+  const imageId = makeId("img", services);
+  const createdImageAt = nowIso(services);
+  const image = env.IMAGES
+    ? await storeGeneratedImage(
+        env.IMAGES,
+        {
+          generationId,
+          userId: user.id,
+          b64Json: requireOpenAiBase64Image(openAiResult.b64Json),
+          outputFormat: promptPackage.settings.outputFormat,
+        },
+        {
+          idFactory: () => imageId,
+          now: () => new Date(createdImageAt),
+        },
+      )
+    : {
+        id: imageId,
+        key: openAiResult.url ?? `inline/${generationId}/${imageId}.${promptPackage.settings.outputFormat}`,
+        url: openAiResult.url ?? dataUrlForBase64Image(
+          requireOpenAiBase64Image(openAiResult.b64Json),
+          promptPackage.settings.outputFormat,
+        ),
+        contentType: contentTypeForOutputFormat(promptPackage.settings.outputFormat),
+        sizeBytes: openAiResult.b64Json ? sizeBytesForBase64Image(openAiResult.b64Json) : undefined,
+        etag: null,
+        createdAt: createdImageAt,
+        storage: "inline" as const,
+      };
+
+  if (env.IMAGES) {
+    await createGeneratedImage(env.DB, {
+      id: image.id,
       generationId,
       userId: user.id,
-      b64Json: openAiResult.b64Json,
-      outputFormat: promptPackage.settings.outputFormat,
-    },
-    {
-      idFactory: () => makeId("img", services),
-      now: services.now,
-    },
-  );
-
-  await createGeneratedImage(env.DB, {
-    id: image.id,
-    generationId,
-    userId: user.id,
-    r2Key: image.key,
-    contentType: image.contentType,
-    createdAt: image.createdAt,
-  });
+      r2Key: image.key,
+      contentType: image.contentType,
+      createdAt: image.createdAt,
+    });
+  }
   await markGenerationComplete(env.DB, {
     id: generationId,
     usageJson: JSON.stringify(openAiResult.usage ?? {}),
@@ -225,6 +250,14 @@ async function handleImageGeneration(
     image,
     revisedPrompt: openAiResult.revisedPrompt,
   });
+}
+
+function requireOpenAiBase64Image(b64Json?: string): string {
+  if (!b64Json) {
+    throw new HttpError(502, "OpenAI-compatible service did not return base64 image data");
+  }
+
+  return b64Json;
 }
 
 function makeId(prefix: string, services: WorkerServices): string {

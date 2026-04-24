@@ -9,10 +9,12 @@ export interface GeneratedImageResult {
   image: {
     id?: string;
     key: string;
+    url?: string;
     contentType: string;
     sizeBytes?: number;
     etag?: string | null;
     createdAt?: string;
+    storage?: "r2" | "inline";
   };
   revisedPrompt: string | null;
 }
@@ -20,6 +22,7 @@ export interface GeneratedImageResult {
 interface ApiErrorBody {
   error?: {
     message?: string;
+    status?: number;
   };
 }
 
@@ -49,8 +52,22 @@ async function postJson<T>(path: string, payload: unknown): Promise<T> {
   const body = (await response.json().catch(() => ({}))) as T & ApiErrorBody;
 
   if (!response.ok) {
-    throw new Error(body.error?.message ?? `Request failed with status ${response.status}`);
+    throw new Error(formatApiError(body, response.status));
   }
 
   return body;
+}
+
+function formatApiError(body: ApiErrorBody, status: number): string {
+  const message = body.error?.message ?? `Request failed with status ${status}`;
+
+  if (status === 403 && message.includes("OpenAI request failed")) {
+    return "当前兼容模型服务拒绝了图片生成请求。提示词增强已可用，但这个服务暂未开放 /v1/images/generations 出图能力。";
+  }
+
+  if (status === 404 && message.includes("OpenAI request failed")) {
+    return "当前兼容模型服务没有图片生成接口。提示词增强已可用，出图需要接入支持 /v1/images/generations 的服务。";
+  }
+
+  return message;
 }

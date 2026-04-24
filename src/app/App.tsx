@@ -19,11 +19,13 @@ export function App() {
   const [category, setCategory] = useState<PromptCategory>("portrait_photography");
   const [size, setSize] = useState<PromptSettings["size"]>("1024x1536");
   const [quality, setQuality] = useState<PromptSettings["quality"]>("medium");
+  const [selectedStyle, setSelectedStyle] = useState(quickStyleChips[0]);
   const [promptPackage, setPromptPackage] = useState<PromptPackage | null>(null);
   const [generatedImage, setGeneratedImage] = useState<GeneratedImageResult | null>(null);
   const [recentItems, setRecentItems] = useState<RecentItem[]>(initialRecentItems);
   const [status, setStatus] = useState<WorkbenchStatus>("idle");
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   const isBusy = status !== "idle";
   const score = promptPackage?.promptScore ?? 82;
 
@@ -35,6 +37,7 @@ export function App() {
 
     setStatus("enhancing");
     setError(null);
+    setNotice(null);
 
     try {
       const nextPackage = await enhancePrompt({
@@ -66,6 +69,7 @@ export function App() {
 
     setStatus("generating");
     setError(null);
+    setNotice(null);
 
     try {
       const result = await generateImage(promptPackage);
@@ -76,12 +80,51 @@ export function App() {
       };
 
       setGeneratedImage(result);
+      setNotice(
+        result.image.storage === "inline"
+          ? "图片已生成。当前未绑定 R2，先以内联预览展示。"
+          : "图片已生成并保存。",
+      );
       setRecentItems((items) => [nextRecentItem, ...items].slice(0, 4));
     } catch (caughtError) {
       setError(caughtError instanceof Error ? caughtError.message : "生成图片失败，请检查服务配置。");
     } finally {
       setStatus("idle");
     }
+  }
+
+  function handleStyleChipClick(chip: string) {
+    setSelectedStyle(chip);
+    setError(null);
+    setNotice(`已选择风格：${chip}。再次增强提示词时会带入这个方向。`);
+  }
+
+  async function handleCopyPrompt() {
+    if (!promptPackage) {
+      setError("请先增强提示词，再复制 prompt。");
+      return;
+    }
+
+    const text = [
+      "Master Prompt:",
+      promptPackage.masterPrompt,
+      "",
+      "Negative Guardrails:",
+      promptPackage.negativePrompt,
+    ].join("\n");
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setError(null);
+      setNotice("Prompt 已复制到剪贴板。");
+    } catch {
+      setError("浏览器暂时不允许写入剪贴板，请手动选中文本复制。");
+    }
+  }
+
+  function handleShowAllHistory() {
+    setError(null);
+    setNotice("完整历史记录会在登录与付费能力接入后开放，当前先展示最近 4 条。露个小尾巴，但不装作已经有后台。");
   }
 
   return (
@@ -184,8 +227,14 @@ export function App() {
             </select>
           </label>
           <div className="chips" aria-label="Quick styles">
-            {quickStyleChips.map((chip, index) => (
-              <button className={`chip ${index === 0 ? "active" : ""}`} type="button" key={chip}>
+            {quickStyleChips.map((chip) => (
+              <button
+                className={`chip ${selectedStyle === chip ? "active" : ""}`}
+                type="button"
+                aria-pressed={selectedStyle === chip}
+                key={chip}
+                onClick={() => handleStyleChipClick(chip)}
+              >
                 {chip}
               </button>
             ))}
@@ -215,6 +264,7 @@ export function App() {
             </button>
           </div>
           {error ? <p className="status-message error">{error}</p> : null}
+          {notice ? <p className="status-message success">{notice}</p> : null}
         </section>
 
         <section className="output-panel" aria-labelledby="output-title">
@@ -224,14 +274,23 @@ export function App() {
           </div>
           <div className="output-body">
             <div className={`image-placeholder ${generatedImage ? "has-image" : ""}`}>
-              <ImageIcon size={48} />
               {generatedImage ? (
                 <>
-                  <strong>图片已保存到 R2</strong>
-                  <span>{generatedImage.image.key}</span>
+                  {generatedImage.image.url ? (
+                    <img src={generatedImage.image.url} alt={promptPackage?.title ?? "生成图片"} />
+                  ) : (
+                    <ImageIcon size={48} />
+                  )}
+                  <strong>
+                    {generatedImage.image.storage === "inline" ? "图片已生成" : "图片已保存到 R2"}
+                  </strong>
+                  <span>{generatedImage.image.storage === "inline" ? "临时预览，刷新后不会保留" : generatedImage.image.key}</span>
                 </>
               ) : (
-                <span>生成图会显示在这里</span>
+                <>
+                  <ImageIcon size={48} />
+                  <span>生成图会显示在这里</span>
+                </>
               )}
             </div>
             <div className="prompt-stack">
@@ -262,7 +321,12 @@ export function App() {
                   <p>{generatedImage.revisedPrompt}</p>
                 </article>
               ) : null}
-              <button className="copy-button" type="button" disabled={!promptPackage}>
+              <button
+                className="copy-button"
+                type="button"
+                disabled={!promptPackage}
+                onClick={handleCopyPrompt}
+              >
                 <Copy size={16} />
                 复制 prompt
               </button>
@@ -277,7 +341,7 @@ export function App() {
             <History size={18} />
             最近生成
           </h2>
-          <button type="button">查看全部</button>
+          <button type="button" onClick={handleShowAllHistory}>查看全部</button>
         </div>
         <div className="history-list">
           {recentItems.map((item) => (

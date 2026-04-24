@@ -61,6 +61,38 @@ describe("OpenAI image service", () => {
     });
   });
 
+  it("does not duplicate /v1 when using an OpenAI-compatible base URL", async () => {
+    const calls: string[] = [];
+    const fetcher = async (url: string | URL | Request) => {
+      calls.push(String(url));
+      return Response.json({
+        data: [
+          {
+            url: "https://example.com/image.png",
+          },
+        ],
+      });
+    };
+
+    const result = await generateImageWithOpenAI(
+      {
+        apiKey: "test-key",
+        baseUrl: "http://34.169.107.98:8088/v1",
+        imageModel: "gpt-image-2",
+        fetcher,
+      },
+      {
+        prompt: "cinematic cat",
+        quality: "medium",
+        size: "1024x1024",
+        outputFormat: "png",
+      },
+    );
+
+    expect(calls[0]).toBe("http://34.169.107.98:8088/v1/images/generations");
+    expect(result.url).toBe("https://example.com/image.png");
+  });
+
   it("returns typed errors for missing credentials and upstream failures", async () => {
     await expect(
       generateImageWithOpenAI(

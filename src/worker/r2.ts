@@ -76,6 +76,17 @@ export function contentTypeForOutputFormat(format: PromptSettings["outputFormat"
   return `image/${format}`;
 }
 
+export function dataUrlForBase64Image(
+  b64Json: string,
+  outputFormat: PromptSettings["outputFormat"],
+): string {
+  return `data:${contentTypeForOutputFormat(outputFormat)};base64,${b64Json}`;
+}
+
+export function sizeBytesForBase64Image(b64Json: string): number {
+  return decodeBase64Image(b64Json).byteLength;
+}
+
 function decodeBase64Image(value: string): Uint8Array {
   const binary = atob(value);
   const bytes = new Uint8Array(binary.length);

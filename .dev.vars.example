@@ -1,1 +1,2 @@
 OPENAI_API_KEY=sk-your-openai-api-key
+OPENAI_BASE_URL=http://model.397858.xyz:8088/v1
