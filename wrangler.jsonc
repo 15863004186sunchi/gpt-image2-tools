@@ -1,0 +1,35 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "gpt-image2-tools",
+  "main": "src/worker/index.ts",
+  "compatibility_date": "2026-04-24",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application"
+  },
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+  "vars": {
+    "ENVIRONMENT": "local",
+    "OPENAI_IMAGE_MODEL": "gpt-image-2",
+    "OPENAI_TEXT_MODEL": "gpt-5.4-mini",
+    "OPENAI_BASE_URL": "https://api.openai.com"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gpt-image2-tools-db",
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "IMAGES",
+      "bucket_name": "gpt-image2-tools-images"
+    }
+  ]
+}
