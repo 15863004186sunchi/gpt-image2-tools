@@ -23,6 +23,7 @@ const promptPackage = {
 describe("App workbench", () => {
   afterEach(() => {
     vi.unstubAllGlobals();
+    window.history.replaceState(null, "", "/");
   });
 
   it("renders the prompt workbench shell", () => {
@@ -33,6 +34,26 @@ describe("App workbench", () => {
     expect(screen.getByRole("button", { name: /增强提示词/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /生成图片/ })).toBeDisabled();
     expect(screen.getByRole("heading", { name: /最近生成/ })).toBeInTheDocument();
+  });
+
+  it("highlights the active navigation item from the current hash", () => {
+    window.history.replaceState(null, "", "/#history");
+    render(<App />);
+
+    expect(screen.getByRole("link", { name: "我的历史" })).toHaveAttribute("aria-current", "page");
+    expect(screen.getByRole("link", { name: "新建生成" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("switches the active navigation item when a sidebar link is clicked", () => {
+    render(<App />);
+
+    fireEvent.click(screen.getByRole("link", { name: "提示词案例" }));
+
+    expect(screen.getByRole("link", { name: "提示词案例" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(screen.getByRole("link", { name: "新建生成" })).not.toHaveAttribute("aria-current");
   });
 
   it("enhances a prompt and generates an image through the API client", async () => {

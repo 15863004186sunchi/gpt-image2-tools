@@ -1,5 +1,5 @@
 import { Copy, History, ImageIcon, Loader2, Sparkles, Wand2 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type {
   PromptCategory,
   PromptMode,
@@ -10,6 +10,13 @@ import { enhancePrompt, generateImage, type GeneratedImageResult } from "./api";
 import { initialRecentItems, quickStyleChips, type RecentItem } from "./data";
 
 const defaultIdea = "一个雨夜的上海街头，穿风衣的女性站在霓虹灯下，像电影剧照一样真实。";
+
+const navItems = [
+  { href: "#new", label: "新建生成" },
+  { href: "#history", label: "我的历史" },
+  { href: "#cases", label: "提示词案例" },
+  { href: "#account", label: "账户设置" },
+] as const;
 
 type WorkbenchStatus = "idle" | "enhancing" | "generating";
 
@@ -26,8 +33,18 @@ export function App() {
   const [status, setStatus] = useState<WorkbenchStatus>("idle");
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [activeNav, setActiveNav] = useState(() => getCurrentHash());
   const isBusy = status !== "idle";
   const score = promptPackage?.promptScore ?? 82;
+
+  useEffect(() => {
+    function handleHashChange() {
+      setActiveNav(getCurrentHash());
+    }
+
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
 
   async function handleEnhance() {
     if (!idea.trim()) {
@@ -136,18 +153,21 @@ export function App() {
           Prompt Studio
         </div>
         <nav>
-          <a className="nav-item active" href="#new">
-            新建生成
-          </a>
-          <a className="nav-item" href="#history">
-            我的历史
-          </a>
-          <a className="nav-item" href="#cases">
-            提示词案例
-          </a>
-          <a className="nav-item" href="#account">
-            账户设置
-          </a>
+          {navItems.map((item) => {
+            const isActive = activeNav === item.href;
+
+            return (
+              <a
+                className={`nav-item ${isActive ? "active" : ""}`}
+                href={item.href}
+                aria-current={isActive ? "page" : undefined}
+                key={item.href}
+                onClick={() => setActiveNav(item.href)}
+              >
+                {item.label}
+              </a>
+            );
+          })}
         </nav>
       </aside>
 
@@ -357,4 +377,13 @@ export function App() {
       </aside>
     </main>
   );
+}
+
+function getCurrentHash(): string {
+  if (typeof window === "undefined") {
+    return "#new";
+  }
+
+  const currentHash = window.location.hash;
+  return navItems.some((item) => item.href === currentHash) ? currentHash : "#new";
 }
